@@ -31,7 +31,6 @@ jobs:
             unzip -o "$z" -d _unzip_tmp
           done
 
-          # 如果 zip 里只有一个顶层目录（如 adbtool125253/），把它的内容上移到仓库根
           entries=(_unzip_tmp/*)
           if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ]; then
             top="${entries[0]}"
