@@ -42,7 +42,7 @@ jobs:
           else
             echo "无单一顶层目录，直接铺到根"
             shopt -s dotglob
-            mv _unzip_tmp/* .
+            cp -rf _unzip_tmp/* .
             shopt -u dotglob
             rm -rf _unzip_tmp
           fi
