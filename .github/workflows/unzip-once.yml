@@ -1,0 +1,64 @@
+name: Unzip Once
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Unzip archive in repo root
+        run: |
+          set -e
+          shopt -s nullglob
+          zips=(*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "根目录没有 zip，退出"
+            exit 0
+          fi
+
+          rm -rf _unzip_tmp
+          mkdir _unzip_tmp
+
+          for z in "${zips[@]}"; do
+            echo "解压: $z"
+            unzip -o "$z" -d _unzip_tmp
+          done
+
+          # 如果 zip 里只有一个顶层目录（如 adbtool125253/），把它的内容上移到仓库根
+          entries=(_unzip_tmp/*)
+          if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ]; then
+            top="${entries[0]}"
+            echo "检测到单一顶层目录: $top，内容上移"
+            shopt -s dotglob
+            mv "$top"/* .
+            shopt -u dotglob
+            rm -rf _unzip_tmp
+          else
+            echo "无单一顶层目录，直接铺到根"
+            shopt -s dotglob
+            mv _unzip_tmp/* .
+            shopt -u dotglob
+            rm -rf _unzip_tmp
+          fi
+
+          rm -f "${zips[@]}"
+          echo "解压完成，zip 已删除"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "没有变化，跳过提交"
+          else
+            git commit -m "chore: unzip uploaded archive"
+            git push
+          fi
