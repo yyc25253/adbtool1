@@ -12,6 +12,7 @@ class MonitorService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var observer: ContentObserver
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private val watchedUris = listOf(
         Settings.Global.getUriFor(Settings.Global.DEVELOPMENT_SETTINGS_ENABLED),
@@ -26,6 +27,10 @@ class MonitorService : Service() {
         super.onCreate()
         createChannel()
         startForeground(NOTIF_ID, buildNotification())
+
+        val pm = getSystemService(PowerManager::class.java)
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Monitor::PollLock")
+        wakeLock?.acquire()
 
         observer = object : ContentObserver(handler) {
             override fun onChange(selfChange: Boolean, uri: Uri?) = checkAndAct()
@@ -91,7 +96,7 @@ class MonitorService : Service() {
     private fun createChannel() {
         val nm = getSystemService(NotificationManager::class.java)
         val ch = NotificationChannel(
-            CHANNEL_ID, "开关监控", NotificationManager.IMPORTANCE_MIN
+            CHANNEL_ID, "开关监控", NotificationManager.IMPORTANCE_LOW
         ).apply {
             setShowBadge(false)
             enableVibration(false)
@@ -111,7 +116,7 @@ class MonitorService : Service() {
             .setContentText(text)
             .setOngoing(true)
             .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -123,11 +128,13 @@ class MonitorService : Service() {
     override fun onDestroy() {
         contentResolver.unregisterContentObserver(observer)
         handler.removeCallbacks(pollRunnable)
+        wakeLock?.release()
+        wakeLock = null
         super.onDestroy()
     }
 
     companion object {
-        private const val CHANNEL_ID = "monitor_v1"
+        private const val CHANNEL_ID = "monitor_v2"
         private const val NOTIF_ID = 1001
     }
 }
