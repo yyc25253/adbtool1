@@ -51,11 +51,14 @@ class MonitorService : Service() {
         )
         val prev = lastState
         lastState = now
-        if (prev == null || prev == now) return
 
-        if (prev.dev == 1 && now.dev == 0) onDeveloperOptionsOff()
-        if (prev.adb == 1 && now.adb == 0) onAdbOff()
-        if (prev.wifi == 1 && now.wifi == 0) onWifiAdbOff()
+        if (prev == now) return
+
+        if (prev != null) {
+            if (prev.dev == 1 && now.dev == 0) onDeveloperOptionsOff()
+            if (prev.adb == 1 && now.adb == 0) onAdbOff()
+            if (prev.wifi == 1 && now.wifi == 0) onWifiAdbOff()
+        }
 
         getSystemService(NotificationManager::class.java)
             .notify(NOTIF_ID, buildNotification())
