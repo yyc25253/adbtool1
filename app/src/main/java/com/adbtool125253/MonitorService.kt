@@ -73,11 +73,19 @@ class MonitorService : Service() {
     }
 
     private fun onAdbOff() {
-        // 你的逻辑
+        try {
+            Settings.Global.putInt(contentResolver, Settings.Global.ADB_ENABLED, 1)
+        } catch (e: SecurityException) {
+            android.util.Log.w("Monitor", "写回 ADB 失败: ${e.message}")
+        }
     }
 
     private fun onWifiAdbOff() {
-        // 你的逻辑
+        try {
+            Settings.Global.putInt(contentResolver, "adb_wifi_enabled", 1)
+        } catch (e: SecurityException) {
+            android.util.Log.w("Monitor", "写回无线调试失败: ${e.message}")
+        }
     }
 
     private fun createChannel() {
